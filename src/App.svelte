@@ -115,6 +115,27 @@
       }
     } else if (event.key === "Enter" && event.metaKey) {
       document.execCommand('insertLineBreak');
+    } else if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      if (row !== undefined && col !== undefined) {
+        let nextRow = parseInt(row);
+        let nextCol = parseInt(col);
+
+        if (event.key === "ArrowUp") {
+          nextRow = Math.max(0, nextRow - 1);
+        } else if (event.key === "ArrowDown") {
+          nextRow = Math.min(9, nextRow + 1);
+        } else if (event.key === "ArrowLeft") {
+          nextCol = Math.max(0, nextCol - 1);
+        } else if (event.key === "ArrowRight") {
+          nextCol = Math.min(9, nextCol + 1);
+        }
+
+        const nextCell = document.querySelector(`[data-row='${nextRow}'][data-col='${nextCol}']`) as HTMLElement;
+        if (nextCell) {
+          nextCell.focus();
+        }
+      }
     }
   }
 
