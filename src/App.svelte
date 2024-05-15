@@ -1,10 +1,10 @@
-<script>
+<script lang="ts">
   import { onMount } from "svelte";
   import init, { greet, sum } from "../public/excel.js";
 
-  let message = "";
-  let result = 0;
-  let cellValues = Array.from({ length: 10 }, () => Array(10).fill(""));
+  let message: string = "";
+  let result: number = 0;
+  let cellValues: string[][] = Array.from({ length: 10 }, () => Array(10).fill(""));
 
   onMount(async () => {
     try {
@@ -17,7 +17,7 @@
     }
   });
 
-  function parseCellAddress(cell) {
+  function parseCellAddress(cell: string): { row: number; col: number } | null {
     const match = cell.match(/([A-Z]+)(\d+)/);
     if (!match) return null;
 
@@ -33,7 +33,7 @@
     return { row, col: colIndex };
   }
 
-  function parseCellRange(range) {
+  function parseCellRange(range: string): { row: number; col: number }[] {
     const [start, end] = range.split(':').map(cell => cell.trim());
 
     const startAddr = parseCellAddress(start);
@@ -50,7 +50,7 @@
     return cells;
   }
 
-  function evaluateSumFormula(formula) {
+  function evaluateSumFormula(formula: string): number {
     const cellReferences = formula.replace('=SUM(', '').replace(')', '').trim().split(',');
 
     const cells = cellReferences.flatMap(ref => {
@@ -66,45 +66,52 @@
       return parseFloat(cellValues[row][col]) || 0;
     });
 
-    return sum(values);
+    return sum(new Float64Array(values));
   }
 
-  function handleInput(event) {
-    const target = event.target;
+  function handleInput(event: FocusEvent) {
+    const target = event.target as HTMLElement;
     const value = target.innerText.trim();
     const { row, col } = target.dataset;
 
-    cellValues[row][col] = value;
+    if (row !== undefined && col !== undefined) {
+      cellValues[parseInt(row)][parseInt(col)] = value;
 
-    if (value.startsWith('=SUM(') && value.endsWith(')')) {
-      const result = evaluateSumFormula(value);
-      target.innerText = result;
-    } else {
+      if (value.startsWith('=SUM(') && value.endsWith(')')) {
+        const result = evaluateSumFormula(value);
+        target.innerText = result.toString();
+      } else {
+        target.innerText = value;
+      }
+    }
+  }
+
+  function handleFocus(event: FocusEvent) {
+    const target = event.target as HTMLElement;
+    const { row, col } = target.dataset;
+
+    if (row !== undefined && col !== undefined) {
+      const value = cellValues[parseInt(row)][parseInt(col)];
       target.innerText = value;
     }
   }
 
-  function handleFocus(event) {
-    const target = event.target;
-    const { row, col } = target.dataset;
-    const value = cellValues[row][col];
-    target.innerText = value;
-  }
-
-  function handleKeyDown(event) {
-    const target = event.target;
+  function handleKeyDown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement;
     const { row, col } = target.dataset;
 
     if (event.key === "Enter" && !event.metaKey) {
       event.preventDefault();
-      const nextRow = parseInt(row) + 1;
-      if (nextRow < 10) {
-        const nextCell = document.querySelector(`[data-row='${nextRow}'][data-col='${col}']`);
-        if (nextCell) {
-          nextCell.focus();
+      if (row !== undefined && col !== undefined) {
+        const nextRow = parseInt(row) + 1;
+        if (nextRow < 10) {
+          const nextCell = document.querySelector(`[data-row='${nextRow}'][data-col='${col}']`) as HTMLElement;
+          if (nextCell) {
+            nextCell.focus();
+          }
+        } else {
+          target.blur();
         }
-      } else {
-        target.blur();
       }
     } else if (event.key === "Enter" && event.metaKey) {
       document.execCommand('insertLineBreak');
